@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<title>Box Coin Purse</title>
+
+
+<style>
+/* ===================== 1. THEME (colors & fonts) ===================== */
+:root {
+  --page-top:     #0c0c0c;   
+  --page-bottom:  #070707;   
+  --leather:      #0c0c0c;   
+  --leather-edge: #0e0d0d;   
+  --parchment-1:  #8f8e8d;   
+  --parchment-2:  #929292;   
+  --ink:          #3a2412;   
+  --gold:         #fffdf7;   
+  --gold-light:   #f8f8f8;   
+  --error:        #8b1e1e;   
+  --success:      #2c5e1e;   
+  --font:         Georgia, "Times New Roman", serif;
+}
+
+/* ===================== PAGE LAYOUT ===================== */
+* { box-sizing: border-box; }
+body {
+  margin: 0; min-height: 100vh;
+  font-family: var(--font); color: var(--ink);
+  background: radial-gradient(ellipse at top, var(--page-top), var(--page-bottom) 70%);
+  background-attachment: fixed;
+}
+h1, h2 { margin: 0; }
+.wrap   { max-width: 960px; margin: 0 auto; padding: 16px; }
+.stack  { display: flex; flex-direction: column; gap: 16px; }
+.row    { display: flex; gap: 8px; }
+.grow   { flex: 1; }
+.center { text-align: center; }
+.small  { font-size: 13px; opacity: .75; }
+
+/* ===================== PANELS ===================== */
+.parchment {
+  padding: 16px;
+  background: linear-gradient(135deg, var(--parchment-1), var(--parchment-2));
+  border: 3px solid var(--gold); border-radius: 14px;
+  box-shadow: 0 6px 18px rgba(0,0,0,.5), inset 0 0 40px rgba(120,80,20,.25);
+}
+.leather {
+  padding: 16px; color: var(--parchment-1);
+  background: var(--leather); border: 2px solid var(--leather-edge); border-radius: 14px;
+  box-shadow: inset 0 0 20px rgba(0,0,0,.5);
+}
+
+/* ===================== HEADER & TOTAL ===================== */
+header { padding: 16px 0; text-align: center; }
+header h1 { font-size: 36px; color: var(--gold-light); text-shadow: 0 2px 4px #000; }
+header p  { margin: 6px 0 0; color: var(--parchment-1); opacity: .8; }
+#total { font-size: 40px; font-weight: bold; }
+.label { font-size: 13px; letter-spacing: .15em; text-transform: uppercase; }
+
+/* ===================== COIN CARDS ===================== */
+#coins { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1px; }
+.coin-card { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 12px; }
+.coin-card .name { font-weight: bold; }
+.coin-card .row  { width: 100%; align-items: center; gap: 4px; }
+.coin {
+  width: 52px; height: 52px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: bold; font-size: 14px; color: rgba(40,20,0,.8);
+  border: 4px solid rgba(0,0,0,.25);
+  box-shadow: inset 0 0 0 3px rgba(255,255,255,.25), inset -4px -4px 8px rgba(0,0,0,.3), 0 3px 6px rgba(0,0,0,.4);
+  text-shadow: 0 1px 0 rgba(255,255,255,.4);
+}
+
+/* ===================== BUTTONS & INPUTS ===================== */
+button {
+  min-height: 44px; min-width: 44px; padding: 0 14px;
+  font-family: inherit; font-weight: bold; font-size: 16px; cursor: pointer;
+  color: var(--gold-light); background: var(--leather);
+  border: 2px solid var(--page-bottom); border-radius: 10px; transition: .15s;
+}
+button:hover  { filter: brightness(1.3); }
+button:active { transform: scale(.96); }
+button.gold   { color: var(--page-bottom); border-color: #8a640a;
+                background: linear-gradient(var(--gold-light), var(--gold)); }
+input, select {
+  min-height: 44px; padding: 0 10px; font-family: inherit; font-size: 16px; color: var(--ink);
+  background: #fff8e3; border: 2px solid #8a6a3a; border-radius: 10px;
+}
+.coin-card input { flex: 1; min-width: 0; text-align: center; font-size: 12px; font-weight: bold; }
+input[type=number]::-webkit-outer-spin-button,
+input[type=number]::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+#amount { width: 100%; }
+
+/* ===================== MESSAGES & LOG ===================== */
+#msg { min-height: 24px; margin: 12px 0 4px; font-weight: bold; }
+#msg.error   { color: var(--error); }
+#msg.success { color: var(--success); }
+#log { list-style: none; margin: 8px 0 0; padding: 0; }
+#log li { padding: 6px 0; font-size: 14px; border-bottom: 1px dashed rgba(241,227,189,.25); }
+
+/* Two columns on wide screens, one on phones */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+@media (max-width: 700px) { .two-col { grid-template-columns: 1fr; } }
+</style>
+</head>
+
+<body>
+<!-- ===================== 3. TEXT ON SCREEN ===================== -->
+<div class="wrap">
+
+  <header>
+    <h1>Box Coin Wallet</h1>
+    <p id="subtitle"></p>
+  </header>
+
+  <main class="stack">
+
+    <!-- Total wealth -->
+    <section class="parchment center">
+      <div class="label">Total Coin</div>
+      <div id="total">0 gp</div>
+      <div id="totalSub" class="small"></div>
+    </section>
+
+    <!-- Coin cards get built here from SETTINGS -->
+    <section id="coins"></section>
+
+    <div class="two-col">
+      <!-- Add / Spend -->
+      <section class="parchment">
+        <h2>Add / Spend</h2>
+        <div class="row" style="margin-top:12px">
+          <input id="amount" type="number" min="0" step="1" inputmode="numeric" placeholder="Amount" aria-label="Amount">
+          <select id="type" aria-label="Coin type"></select>
+        </div>
+        <div class="row" style="margin-top:12px">
+          <button id="addBtn" class="gold grow">+ Add</button>
+          <button id="spendBtn" class="grow">&minus; Spend</button>
+        </div>
+        <p id="msg" role="status"></p>
+        <p class="small">Spending makes change from larger coins when needed.</p>
+      </section>
+
+      <!-- Tools -->
+      <section class="parchment">
+        <h2>Tools</h2>
+        <div class="stack" style="gap:8px; margin-top:12px">
+          <button id="consolidateBtn" class="gold">Convert / Consolidate</button>
+          <button id="resetBtn">Reset Wallet</button>
+        </div>
+        <p id="rates" class="small" style="margin-top:12px"></p>
+      </section>
+    </div>
+
+    <!-- Activity log -->
+    <section class="leather">
+      <h2 style="color:var(--gold-light)">Recent Activity</h2>
+      <ul id="log"></ul>
+    </section>
+
+  </main>
+
+  <p class="center small" style="color:var(--parchment-1); padding:24px 0">
+    As a free action, can I regret my life choices?
+  </p>
+</div>
+
+<script>
+/* ================================================================
+   2. SETTINGS 
+   ================================================================ */
+
+const COINS = [
+  { id: "cp", name: "Copper",   value: 1,    color: ["#e9a06b", "#b05f2c"], keepWhenConsolidating: true  },
+  { id: "sp", name: "Silver",   value: 10,   color: ["#ffffff", "#a9afb5"], keepWhenConsolidating: true  },
+  { id: "ep", name: "Electrum", value: 50,   color: ["#f3efc0", "#c3b66a"], keepWhenConsolidating: false },
+  { id: "gp", name: "Gold",     value: 100,  color: ["#fff1a0", "#d4a017"], keepWhenConsolidating: true  },
+  { id: "pp", name: "Platinum", value: 1000, color: ["#ffffff", "#8aa9c0"], keepWhenConsolidating: true  },
+];
+
+const SUBTITLE       = "Wallet";
+const RATES_TEXT     = "Rates: 1 PP = 10 GP · 1 GP = 2 EP = 10 SP = 100 CP · 1 EP = 5 SP · 1 SP = 10 CP. Nothing is saved between visits.";
+const DEFAULT_COIN   = "gp";   
+const TOTAL_COIN     = "gp";   
+const MAX_LOG_ITEMS  = 8;      
+
+
+/* ================================================================
+   THE ENGINE
+   ================================================================ */
+
+// ----- State -----
+const purse = {};                       
+COINS.forEach(c => purse[c.id] = 0);
+let logItems = [];
+
+// ----- Quick helpers -----
+const $        = id => document.getElementById(id);
+const coinById = id => COINS.find(c => c.id === id);
+const upper    = id => id.toUpperCase();
+
+function totalInCopper() {
+  return COINS.reduce((sum, c) => sum + purse[c.id] * c.value, 0);
+}
+
+// Show copper as a nice number in the TOTAL_COIN (e.g. 150 -> "1.5 gp")
+function formatTotal(copper) {
+  const n = copper / coinById(TOTAL_COIN).value;
+  const text = Number.isInteger(n) ? n : n.toFixed(2).replace(/0+$/, "").replace(/\.$/, "");
+  return text + " " + TOTAL_COIN;
+}
+
+// Turn an amount of copper into the fewest coins (skips coins that opt out)
+function fewestCoins(copper) {
+  const result = {};
+  COINS.forEach(c => result[c.id] = 0);
+  [...COINS].reverse().forEach(c => {
+    if (!c.keepWhenConsolidating) return;
+    result[c.id] = Math.floor(copper / c.value);
+    copper %= c.value;
+  });
+  return result;
+}
+
+// ----- Messages & log -----
+function say(text, kind) {
+  $("msg").textContent = text;
+  $("msg").className = kind || "";
+}
+
+function addLog(text) {
+  logItems.unshift(text);
+  logItems = logItems.slice(0, MAX_LOG_ITEMS);
+  renderLog();
+}
+
+function renderLog() {
+  const list = $("log");
+  list.innerHTML = "";
+  if (logItems.length === 0) {
+    list.innerHTML = '<li style="opacity:.6">No activity yet.</li>';
+    return;
+  }
+  logItems.forEach(text => {
+    const li = document.createElement("li");
+    li.textContent = text;
+    list.appendChild(li);
+  });
+}
+
+// ----- Drawing the screen -----
+function buildPage() {
+  $("subtitle").textContent = SUBTITLE;
+  $("rates").textContent = RATES_TEXT;
+
+  // Coin cards + dropdown options
+  COINS.forEach(c => {
+    const card = document.createElement("div");
+    card.className = "parchment coin-card";
+    card.innerHTML =
+      `<div class="coin" style="background: radial-gradient(circle at 30% 30%, ${c.color[0]}, ${c.color[1]})">${upper(c.id)}</div>
+       <div class="name">${c.name}</div>
+       <div class="row">
+         <button data-dec="${c.id}" aria-label="Decrease ${c.name}">&minus;</button>
+         <input type="number" min="0" step="1" inputmode="numeric" data-input="${c.id}" aria-label="${c.name} pieces">
+         <button data-inc="${c.id}" aria-label="Increase ${c.name}">+</button>
+       </div>`;
+    $("coins").appendChild(card);
+
+    const option = document.createElement("option");
+    option.value = c.id;
+    option.textContent = upper(c.id);
+    option.selected = (c.id === DEFAULT_COIN);
+    $("type").appendChild(option);
+  });
+}
+
+function render() {
+  COINS.forEach(c => {
+    const box = document.querySelector(`[data-input="${c.id}"]`);
+    if (document.activeElement !== box) box.value = purse[c.id];
+  });
+  const copper = totalInCopper();
+  $("total").textContent    = formatTotal(copper);
+  $("totalSub").textContent = copper.toLocaleString() + " copper equivalent";
+}
+
+// ----- Actions -----
+function readAmount() {
+  const n = Math.floor(Number($("amount").value));
+  if (!isFinite(n) || n <= 0) {
+    say("Enter a positive whole amount.", "error");
+    return null;
+  }
+  return n;
+}
+
+function addCoins() {
+  const amount = readAmount();
+  if (amount === null) return;
+  const id = $("type").value;
+  purse[id] += amount;
+  say(`Added ${amount} ${upper(id)}.`, "success");
+  addLog(`+ ${amount} ${upper(id)}`);
+  render();
+}
+
+function spendCoins() {
+  const amount = readAmount();
+  if (amount === null) return;
+  const id   = $("type").value;
+  const coin = coinById(id);
+  const cost = amount * coin.value;
+
+  if (cost > totalInCopper()) {
+    say(`Insufficient funds! You need ${formatTotal(cost)} but only have ${formatTotal(totalInCopper())}.`, "error");
+    return;
+  }
+
+  // Order to pay with: the chosen coin, then smaller coins (biggest first),
+  // then larger coins (smallest first) -- larger coins are where change comes from.
+  const smaller = COINS.filter(c => c.value < coin.value).sort((a, b) => b.value - a.value);
+  const larger  = COINS.filter(c => c.value > coin.value).sort((a, b) => a.value - b.value);
+  const order   = [coin, ...smaller, ...larger];
+
+  let remaining = cost;
+  let madeChange = false;
+  order.forEach(c => {
+    if (remaining <= 0) return;
+    const used = Math.min(purse[c.id], Math.ceil(remaining / c.value));
+    purse[c.id] -= used;
+    remaining   -= used * c.value;
+    if (c.id !== id && used > 0) madeChange = true;
+  });
+
+  // Overpaid? Give change back in the fewest coins.
+  if (remaining < 0) {
+    const change = fewestCoins(-remaining);
+    COINS.forEach(c => purse[c.id] += change[c.id]);
+  }
+
+  say(`Spent ${amount} ${upper(id)}` + (madeChange ? " (change made from other coins)." : "."), "success");
+  addLog(`− ${amount} ${upper(id)}` + (madeChange ? " (with change)" : ""));
+  render();
+}
+
+function consolidate() {
+  const best = fewestCoins(totalInCopper());
+  COINS.forEach(c => purse[c.id] = best[c.id]);
+  say("Coins consolidated into the fewest pieces.", "success");
+  addLog("Consolidated coins");
+  render();
+}
+
+function resetPurse() {
+  COINS.forEach(c => purse[c.id] = 0);
+  say("Purse emptied.", "success");
+  addLog("Purse reset");
+  render();
+}
+
+// ----- Wire up the buttons -----
+function connectButtons() {
+  $("addBtn").addEventListener("click", addCoins);
+  $("spendBtn").addEventListener("click", spendCoins);
+  $("consolidateBtn").addEventListener("click", consolidate);
+  $("resetBtn").addEventListener("click", resetPurse);
+
+  // + and − buttons on each coin card
+  $("coins").addEventListener("click", e => {
+    const button = e.target.closest("button");
+    if (!button) return;
+    if (button.dataset.inc) purse[button.dataset.inc]++;
+    if (button.dataset.dec && purse[button.dataset.dec] > 0) purse[button.dataset.dec]--;
+    render();
+  });
+
+  // Typing a number straight into a coin card
+  $("coins").addEventListener("change", e => {
+    const id = e.target.dataset.input;
+    if (!id) return;
+    const n = Math.floor(Number(e.target.value));
+    const old = purse[id];
+    purse[id] = isFinite(n) && n > 0 ? n : 0;
+    if (old !== purse[id]) addLog(`Set ${coinById(id).name} to ${purse[id]} ${upper(id)}`);
+    render();
+  });
+}
+
+// ----- Start -----
+buildPage();
+connectButtons();
+renderLog();
+render();
+</script>
+</body>
+</html>
